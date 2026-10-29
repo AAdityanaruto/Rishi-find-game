@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find Rishi in Anime!</title>
+<style>
+  :root { --bg:#0b1024; --panel:#171f3d; --gold:#ffd166; --pink:#ff5ea8; --cyan:#62e6ff; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; padding:20px; color:#f7f8ff;
+    font-family:system-ui,Arial,sans-serif;
+    background:radial-gradient(circle at top,#24376b 0,#101630 48%,#080b18 100%);
+  }
+  .wrap { max-width:950px; margin:auto; }
+  header { text-align:center; margin:8px 0 20px; }
+  h1 { margin:0; font-size:clamp(2rem,6vw,3.4rem); color:var(--gold); text-shadow:0 0 22px #ff9f4380; }
+  .subtitle { margin:8px 0 0; color:#c8d3ff; }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:20px 0; }
+  .stat { background:#ffffff0e; border:1px solid #ffffff24; border-radius:15px; padding:12px; text-align:center; }
+  .stat small { display:block; color:#aebbe9; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; }
+  .stat strong { display:block; font-size:1.65rem; margin-top:3px; }
+  .target { display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; background:#171f3d; border:1px solid #43558b; border-radius:18px; padding:15px; }
+  .target-badge { width:68px; height:68px; border-radius:16px; display:grid; place-items:center; font-size:2.5rem; background:linear-gradient(145deg,#ff5ea8,#7d5cff); }
+  .target p { margin:4px 0 0; color:#cbd5ff; }
+  .target h2 { margin:0; color:var(--cyan); }
+  .controls { display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; margin:16px 0; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:12px; padding:11px 17px; font-weight:800; transition:transform .12s,filter .12s; }
+  button:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .restart { background:var(--gold); color:#242039; }
+  .hint { background:#26365f; color:white; border:1px solid #5d74b8; }
+  .message { min-height:28px; text-align:center; font-weight:700; color:#c8d3ff; margin:10px 0 14px; }
+  .grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+  .character {
+    min-width:0; padding:9px 4px 10px; color:#fff; background:linear-gradient(155deg,#222e57,#151b35);
+    border:2px solid #3c4b7b; border-radius:15px; min-height:112px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  }
+  .character .emoji { font-size:clamp(1.7rem,5vw,2.7rem); line-height:1.2; filter:drop-shadow(0 4px 4px #0005); }
+  .character .name { font-size:clamp(.68rem,2vw,.9rem); overflow-wrap:anywhere; }
+  .character:focus-visible { outline:3px solid var(--cyan); outline-offset:2px; }
+  .character.found { border-color:#69f0ae; background:linear-gradient(145deg,#145b50,#173b45); }
+  .character.wrong { animation:shake .25s; border-color:#ff6b7b; }
+  .character:disabled { cursor:default; opacity:.82; }
+  .character.found:disabled { opacity:1; }
+  .footer { color:#9eacd9; text-align:center; font-size:.85rem; margin:20px 0 5px; }
+  .overlay { position:fixed; inset:0; display:none; place-items:center; padding:20px; background:#050817cc; }
+  .overlay.show { display:grid; }
+  .modal { max-width:420px; width:100%; padding:28px; text-align:center; border-radius:22px; background:#171f3d; border:2px solid var(--gold); box-shadow:0 20px 70px #0008; }
+  .modal h2 { color:var(--gold); font-size:2rem; margin:0 0 8px; }
+  .modal p { color:#d7defb; line-height:1.5; }
+  @keyframes shake { 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  @media(max-width:500px) { body{padding:12px}.grid{gap:6px}.character{min-height:91px;border-radius:11px}.stats{gap:6px}.stat{padding:9px 4px}.stat strong{font-size:1.35rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔎 FIND RISHI!</h1>
+    <p class="subtitle">Anime Multiverse Search • 25 characters • One hidden Rishi</p>
+  </header>
+
+  <section class="stats" aria-label="Game statistics">
+    <div class="stat"><small>Time left</small><strong id="timer">45s</strong></div>
+    <div class="stat"><small>Score</small><strong id="score">0</strong></div>
+    <div class="stat"><small>Attempts</small><strong id="attempts">0</strong></div>
+  </section>
+
+  <section class="target">
+    <div class="target-badge">🕵️</div>
+    <div>
+      <h2>Mission: Find Rishi</h2>
+      <p>Tap Rishi's secret card before the timer reaches zero!</p>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="restart" id="restart">↻ Restart Game</button>
+    <button class="hint" id="hint">💡 Hint (−3 points)</button>
+  </div>
+
+  <div class="message" id="message" role="status" aria-live="polite">Ready, detective? Find Rishi!</div>
+  <main class="grid" id="grid" aria-label="25 anime character cards"></main>
+  <p class="footer">Fan-made mini-game • Original emoji characters • No downloads or internet needed</p>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+  <div class="modal">
+    <h2 id="endTitle">Game over!</h2>
+    <p id="endText"></p>
+    <button class="restart" id="playAgain">Play Again 🎮</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const characters = [
+    {name:"Rishi", emoji:"🥷", target:true},
+    {name:"Ninja Hero", emoji:"🍥"},
+    {name:"Pirate Captain", emoji:"🏴‍☠️"},
+    {name:"Flame Swordsman", emoji:"🔥"},
+    {name:"Shadow Warrior", emoji:"🌑"},
+    {name:"Straw Hat", emoji:"👒"},
+    {name:"Demon Hunter", emoji:"⚔️"},
+    {name:"Lightning Kid", emoji:"⚡"},
+    {name:"Pink Mage", emoji:"🪄"},
+    {name:"Ice Fighter", emoji:"❄️"},
+    {name:"Saiyan Hero", emoji:"💥"},
+    {name:"Masked Ninja", emoji:"🎭"},
+    {name:"Soul Reaper", emoji:"🗡️"},
+    {name:"Titan Scout", emoji:"🛡️"},
+    {name:"Cosmic Mage", emoji:"🌌"},
+    {name:"Water Hashira", emoji:"💧"},
+    {name:"Green Swordsman", emoji:"🟢"},
+    {name:"Red-haired Pirate", emoji:"🔴"},
+    {name:"Moon Warrior", emoji:"🌙"},
+    {name:"Thunder Master", emoji:"🌩️"},
+    {name:"Star Guardian", emoji:"⭐"},
+    {name:"Beast Tamer", emoji:"🐺"},
+    {name:"Mecha Pilot", emoji:"🤖"},
+    {name:"Mystic Healer", emoji:"🧚"},
+    {name:"Dragon Fighter", emoji:"🐉"}
+  ];
+
+  const grid = document.getElementById("grid");
+  const timerEl = document.getElementById("timer");
+  const scoreEl = document.getElementById("score");
+  const attemptsEl = document.getElementById("attempts");
+  const message = document.getElementById("message");
+  const overlay = document.getElementById("overlay");
+  const endTitle = document.getElementById("endTitle");
+  const endText = document.getElementById("endText");
+  let timeLeft = 45, score = 0, attempts = 0, running = false, finished = false;
+  let timerId = null, targetCard = null;
+
+  function shuffle(items) {
+    const result = [...items];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+  function updateStats() {
+    timerEl.textContent = timeLeft + "s";
+    scoreEl.textContent = score;
+    attemptsEl.textContent = attempts;
+  }
+  function endGame(won) {
+    if (finished) return;
+    finished = true;
+    running = false;
+    clearInterval(timerId);
+    endTitle.textContent = won ? "🎉 You found Rishi!" : "⏰ Time's up!";
+    endText.textContent = won
+      ? `Legendary detective! You found Rishi in ${attempts} attempt${attempts === 1 ? "" : "s"}. Final score: ${score}.`
+      : `Rishi escaped into the anime multiverse! Your score was ${score}. Try again and find him faster.`;
+    overlay.classList.add("show");
+  }
+  function startTimer() {
+    if (running || finished) return;
+    running = true;
+    timerId = setInterval(() => {
+      timeLeft--;
+      updateStats();
+      if (timeLeft <= 0) endGame(false);
+    }, 1000);
+  }
+  function clickCard(event) {
+    const card = event.currentTarget;
+    if (finished || card.disabled) return;
+    startTimer();
+    attempts++;
+    if (card.dataset.target === "true") {
+      score += Math.max(10, 100 - attempts * 5 + timeLeft);
+      card.classList.add("found");
+      card.querySelector(".name").textContent = "RISHI FOUND!";
+      message.textContent = "🏆 Amazing! You found Rishi!";
+      updateStats();
+      endGame(true);
+    } else {
+      score = Math.max(0, score - 2);
+      card.classList.add("wrong");
+      card.disabled = true;
+      message.textContent = "Not Rishi! Try another card. (−2 points)";
+      updateStats();
+      setTimeout(() => card.classList.remove("wrong"), 300);
+    }
+  }
+  function buildGrid() {
+    grid.replaceChildren();
+    shuffle(characters).forEach((person, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "character";
+      button.setAttribute("aria-label", "Character " + (index + 1) + ": " + (person.target ? "mystery character" : person.name));
+      button.dataset.target = String(Boolean(person.target));
+      button.innerHTML = `<span class="emoji" aria-hidden="true">${person.emoji}</span><span class="name">${person.target ? "???" : person.name}</span>`;
+      button.addEventListener("click", clickCard);
+      grid.appendChild(button);
+      if (person.target) targetCard = button;
+    });
+  }
+  function restart() {
+    clearInterval(timerId);
+    timeLeft = 45; score = 0; attempts = 0; running = false; finished = false;
+    overlay.classList.remove("show");
+    message.textContent = "Ready, detective? Find Rishi!";
+    updateStats();
+    buildGrid();
+  }
+  document.getElementById("restart").addEventListener("click", restart);
+  document.getElementById("playAgain").addEventListener("click", restart);
+  document.getElementById("hint").addEventListener("click", () => {
+    if (finished) return;
+    if (!running) startTimer();
+    score = Math.max(0, score - 3);
+    message.textContent = "💡 Hint: Look for the ninja with the 🥷 symbol!";
+    updateStats();
+  });
+  restart();
+})();
+</script>
+</body>
+</html>
